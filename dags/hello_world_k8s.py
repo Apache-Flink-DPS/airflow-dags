@@ -17,7 +17,7 @@ dag = DAG(
     'hello_world_kubernetes',
     default_args=default_args,
     description='A simple Hello World DAG using Kubernetes operator',
-    schedule='@daily',
+    schedule='@once',
     catchup=False,
     tags=['hello_world', 'kubernetes'],
 )
