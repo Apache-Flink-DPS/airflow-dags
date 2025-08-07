@@ -30,7 +30,7 @@ dag = DAG(
     'hello_world_traditional',
     default_args=default_args,
     description='A simple Hello World DAG using traditional operators',
-    schedule='@daily',
+    schedule='@once',
     catchup=False,
     tags=['hello_world', 'traditional'],
 )
