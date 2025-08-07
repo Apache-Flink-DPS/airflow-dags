@@ -83,9 +83,8 @@ k8s_task_1 = KubernetesPodOperator(
     image='python:3.9-slim',
     cmds=['python', '-c'],
     arguments=[k8s_script_1],
-    # Key settings for XCom
-    do_xcom_push=True,  # Enable XCom output
-    xcom_push=True,     # Enable XCom sidecar
+    # Key settings for XCom - removed the invalid xcom_push parameter
+    do_xcom_push=True,  # This is the correct parameter
     get_logs=True,
     in_cluster=True,
     is_delete_operator_pod=True,
@@ -125,8 +124,7 @@ k8s_task_2 = KubernetesPodOperator(
     image='python:3.9-slim',
     cmds=['python', '-c'],
     arguments=[k8s_script_2],
-    do_xcom_push=True,
-    xcom_push=True,
+    do_xcom_push=True,  # Only this parameter is needed
     get_logs=True,
     in_cluster=True,
     is_delete_operator_pod=True,
