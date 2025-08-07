@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.providers.cncf.kubernetes.operators.pod import KubernetesPodOperator
+import json
 
 default_args = {
     'owner': 'stefanpedratscher',
@@ -14,17 +15,15 @@ default_args = {
 }
 
 dag = DAG(
-    'complex_xcom_k8s_pipeline',
+    'xcom_k8s_pipeline',
     default_args=default_args,
-    description='Complex DAG mixing Python and KubernetesPodOperator with XCom',
+    description='Efficient DAG using XCom sidecar for data transfer',
     schedule='@once',
     catchup=False,
-    tags=['example', 'complex', 'xcom', 'k8s'],
+    tags=['example', 'efficient', 'xcom', 'k8s'],
 )
 
-# Step 1: Python → Python, produce dict in XCom
 def py_task_1(**kwargs):
-    ti = kwargs['ti']  # get task instance
     data = {"step": 1, "message": "Hello from Python task 1"}
     print(f"py_task_1 pushing: {data}")
     return data
@@ -50,14 +49,32 @@ py2 = PythonOperator(
     dag=dag,
 )
 
-# Step 3: Python → KubernetesPodOperator, pass data via XCom and env var
-def make_env_from_xcom(ti):
-    data = ti.xcom_pull(task_ids='python_task_2')
-    # Pass as env var JSON string
-    import json
-    return [{'name': 'XCOM_DATA', 'value': json.dumps(data)}]
+# This script will be executed in the K8s pod
+k8s_script_1 = '''
+import json
+import os
 
-# KubernetesPodOperator cannot directly read XCom in pod; we pass via env var.
+# Read XCom data from mounted file (Airflow automatically mounts this)
+try:
+    with open('/airflow/xcom/return.json', 'r') as f:
+        input_data = json.load(f)
+    print(f"K8s task 1 received: {input_data}")
+except FileNotFoundError:
+    print("No XCom input found, starting fresh")
+    input_data = {"step": 0, "message": "Starting from K8s"}
+
+# Process the data
+output_data = input_data.copy()
+output_data['step'] = 3
+output_data['message'] += " -> modified by k8s_task_1"
+
+# Write output for XCom (Airflow automatically reads this)
+os.makedirs('/airflow/xcom', exist_ok=True)
+with open('/airflow/xcom/return.json', 'w') as f:
+    json.dump(output_data, f)
+
+print(f"K8s task 1 output: {output_data}")
+'''
 
 k8s_task_1 = KubernetesPodOperator(
     task_id='k8s_task_1',
@@ -65,24 +82,41 @@ k8s_task_1 = KubernetesPodOperator(
     namespace='stefan-dev',
     image='python:3.9-slim',
     cmds=['python', '-c'],
-    arguments=[
-        'import os, json; d=json.loads(os.environ["XCOM_DATA"]); '
-        'd["step"]=3; d["message"]+=" -> modified by k8s_task_1"; '
-        'print(json.dumps(d))'
-    ],
-    env_vars=make_env_from_xcom,
+    arguments=[k8s_script_1],
+    # Key settings for XCom
+    do_xcom_push=True,  # Enable XCom output
+    xcom_push=True,     # Enable XCom sidecar
     get_logs=True,
-    do_xcom_push=True,
     in_cluster=True,
     is_delete_operator_pod=True,
     dag=dag,
 )
 
-# Step 4: KubernetesPodOperator → KubernetesPodOperator, chain
-def make_env_from_k8s_1(ti):
-    data = ti.xcom_pull(task_ids='k8s_task_1')
-    import json
-    return [{'name': 'XCOM_DATA', 'value': json.dumps(data)}]
+k8s_script_2 = '''
+import json
+import os
+
+# Read XCom data from previous task
+try:
+    with open('/airflow/xcom/return.json', 'r') as f:
+        input_data = json.load(f)
+    print(f"K8s task 2 received: {input_data}")
+except FileNotFoundError:
+    print("No XCom input found")
+    input_data = {"step": 0, "message": "Error: no input"}
+
+# Process the data
+output_data = input_data.copy()
+output_data['step'] = 4
+output_data['message'] += " -> modified by k8s_task_2"
+
+# Write output for XCom
+os.makedirs('/airflow/xcom', exist_ok=True)
+with open('/airflow/xcom/return.json', 'w') as f:
+    json.dump(output_data, f)
+
+print(f"K8s task 2 output: {output_data}")
+'''
 
 k8s_task_2 = KubernetesPodOperator(
     task_id='k8s_task_2',
@@ -90,21 +124,17 @@ k8s_task_2 = KubernetesPodOperator(
     namespace='stefan-dev',
     image='python:3.9-slim',
     cmds=['python', '-c'],
-    arguments=[
-        'import os, json; d=json.loads(os.environ["XCOM_DATA"]); '
-        'd["step"]=4; d["message"]+=" -> modified by k8s_task_2"; '
-        'print(json.dumps(d))'
-    ],
-    env_vars=make_env_from_k8s_1,
-    get_logs=True,
+    arguments=[k8s_script_2],
     do_xcom_push=True,
+    xcom_push=True,
+    get_logs=True,
     in_cluster=True,
     is_delete_operator_pod=True,
     dag=dag,
 )
 
-# Step 5: KubernetesPodOperator → PythonOperator, pull final XCom
-def final_py_task(ti):
+def final_py_task(**kwargs):
+    ti = kwargs['ti']
     data = ti.xcom_pull(task_ids='k8s_task_2')
     print(f"Final Python task received: {data}")
 
