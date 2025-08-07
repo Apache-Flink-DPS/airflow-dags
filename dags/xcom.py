@@ -49,60 +49,53 @@ py2 = PythonOperator(
     dag=dag,
 )
 
-# This script will be executed in the K8s pod
-k8s_script_1 = '''
-import json
-import os
-
-# Read XCom data from mounted file (Airflow automatically mounts this)
-try:
-    with open('/airflow/xcom/return.json', 'r') as f:
-        input_data = json.load(f)
-    print(f"K8s task 1 received: {input_data}")
-except FileNotFoundError:
-    print("No XCom input found, starting fresh")
-    input_data = {"step": 0, "message": "Starting from K8s"}
-
-# Process the data
-output_data = input_data.copy()
-output_data['step'] = 3
-output_data['message'] += " -> modified by k8s_task_1"
-
-# Write output for XCom (Airflow automatically reads this)
-os.makedirs('/airflow/xcom', exist_ok=True)
-with open('/airflow/xcom/return.json', 'w') as f:
-    json.dump(output_data, f)
-
-print(f"K8s task 1 output: {output_data}")
-'''
-
+# Use Jinja templates to inject XCom data directly into the script
 k8s_task_1 = KubernetesPodOperator(
     task_id='k8s_task_1',
     name='k8s-pod-1',
     namespace='stefan-dev',
     image='python:3.9-slim',
     cmds=['python', '-c'],
-    arguments=[k8s_script_1],
-    # Key settings for XCom - removed the invalid xcom_push parameter
-    do_xcom_push=True,  # This is the correct parameter
+    arguments=['''
+import json
+import os
+
+# XCom data injected via template
+input_data = {{ ti.xcom_pull(task_ids='python_task_2') | tojson }}
+print(f"K8s task 1 received: {input_data}")
+
+# Process the data
+output_data = input_data.copy()
+output_data['step'] = 3
+output_data['message'] += " -> modified by k8s_task_1"
+
+# Write output for XCom
+os.makedirs('/airflow/xcom', exist_ok=True)
+with open('/airflow/xcom/return.json', 'w') as f:
+    json.dump(output_data, f)
+
+print(f"K8s task 1 output: {output_data}")
+    '''],
+    do_xcom_push=True,
     get_logs=True,
     in_cluster=True,
     is_delete_operator_pod=True,
     dag=dag,
 )
 
-k8s_script_2 = '''
+k8s_task_2 = KubernetesPodOperator(
+    task_id='k8s_task_2',
+    name='k8s-pod-2',
+    namespace='stefan-dev',
+    image='python:3.9-slim',
+    cmds=['python', '-c'],
+    arguments=['''
 import json
 import os
 
-# Read XCom data from previous task
-try:
-    with open('/airflow/xcom/return.json', 'r') as f:
-        input_data = json.load(f)
-    print(f"K8s task 2 received: {input_data}")
-except FileNotFoundError:
-    print("No XCom input found")
-    input_data = {"step": 0, "message": "Error: no input"}
+# XCom data injected via template
+input_data = {{ ti.xcom_pull(task_ids='k8s_task_1') | tojson }}
+print(f"K8s task 2 received: {input_data}")
 
 # Process the data
 output_data = input_data.copy()
@@ -115,16 +108,8 @@ with open('/airflow/xcom/return.json', 'w') as f:
     json.dump(output_data, f)
 
 print(f"K8s task 2 output: {output_data}")
-'''
-
-k8s_task_2 = KubernetesPodOperator(
-    task_id='k8s_task_2',
-    name='k8s-pod-2',
-    namespace='stefan-dev',
-    image='python:3.9-slim',
-    cmds=['python', '-c'],
-    arguments=[k8s_script_2],
-    do_xcom_push=True,  # Only this parameter is needed
+    '''],
+    do_xcom_push=True,
     get_logs=True,
     in_cluster=True,
     is_delete_operator_pod=True,
