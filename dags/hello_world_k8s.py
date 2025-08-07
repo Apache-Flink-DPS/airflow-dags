@@ -19,7 +19,7 @@ dag = DAG(
     description='A simple Hello World DAG using Kubernetes operator',
     schedule='@once',
     catchup=False,
-    tags=['hello_world', 'kubernetes'],
+    tags=['hello_world', 'k8s'],
 )
 
 start_task = EmptyOperator(

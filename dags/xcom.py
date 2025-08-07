@@ -2,7 +2,6 @@ from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.providers.cncf.kubernetes.operators.pod import KubernetesPodOperator
-import json
 
 default_args = {
     'owner': 'stefanpedratscher',
@@ -17,10 +16,10 @@ default_args = {
 dag = DAG(
     'xcom_k8s_pipeline',
     default_args=default_args,
-    description='Efficient DAG using XCom sidecar for data transfer',
+    description='DAG using XCom sidecar for data transfer',
     schedule='@once',
     catchup=False,
-    tags=['example', 'efficient', 'xcom', 'k8s'],
+    tags=['xcom', 'k8s'],
 )
 
 def py_task_1(**kwargs):
