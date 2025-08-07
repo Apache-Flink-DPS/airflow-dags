@@ -23,7 +23,8 @@ dag = DAG(
 )
 
 # Step 1: Python → Python, produce dict in XCom
-def py_task_1(**ti):
+def py_task_1(**kwargs):
+    ti = kwargs['ti']  # get task instance
     data = {"step": 1, "message": "Hello from Python task 1"}
     print(f"py_task_1 pushing: {data}")
     return data
@@ -31,12 +32,11 @@ def py_task_1(**ti):
 py1 = PythonOperator(
     task_id='python_task_1',
     python_callable=py_task_1,
-    provide_context=True,
     dag=dag,
 )
 
-# Step 2: Python → Python, consume previous XCom, modify, return
-def py_task_2(**ti):
+def py_task_2(**kwargs):
+    ti = kwargs['ti']
     prev_data = ti.xcom_pull(task_ids='python_task_1')
     new_data = prev_data.copy()
     new_data['step'] = 2
@@ -47,7 +47,6 @@ def py_task_2(**ti):
 py2 = PythonOperator(
     task_id='python_task_2',
     python_callable=py_task_2,
-    provide_context=True,
     dag=dag,
 )
 
