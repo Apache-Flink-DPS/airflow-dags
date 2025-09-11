@@ -15,12 +15,12 @@ default_args = {
 }
 
 with DAG(
-        'complex_k8s_only',
+        'simple_branch',
         default_args=default_args,
-        description='Complex DAG with only KubernetesPodOperator',
+        description='Complex DAG with only branch',
         schedule='@daily',
         catchup=False,
-        tags=['k8s', 'complex'],
+        tags=['branch', 'simple'],
 ) as dag:
     @task.branch(task_id="branch_task")
     def branch_func(ti=None):
