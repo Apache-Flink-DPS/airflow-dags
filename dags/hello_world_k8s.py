@@ -6,7 +6,6 @@ from airflow.operators.empty import EmptyOperator
 default_args = {
     'owner': 'stefanpedratscher',
     'depends_on_past': False,
-    'start_date': "2025-08-07T00:00:00Z",
     'email_on_failure': False,
     'email_on_retry': False,
     'retries': 1,
