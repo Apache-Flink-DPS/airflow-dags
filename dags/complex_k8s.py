@@ -55,11 +55,11 @@ with DAG(
             namespace='stefan-dev',
             image='python:3.9-slim',
             cmds=['python', '-c'],
-            arguments=['print("Processing task A")'],
+            arguments=['import time; time.sleep(10); print("Processing task A")'],
             env_vars={'STAGE': 'A'},
             container_resources=k8s.V1ResourceRequirements(
                 requests={
-                    "cpu": 20,
+                    "cpu": 2,
                     "memory": "200Mi",
                 },
             ),
@@ -74,6 +74,12 @@ with DAG(
             cmds=['python', '-c'],
             arguments=['print("Processing task B")'],
             env_vars={'STAGE': 'B'},
+            container_resources=k8s.V1ResourceRequirements(
+                requests={
+                    "cpu": 1,
+                    "memory": "200Mi",
+                },
+            ),
             in_cluster=True,
         )
 
@@ -83,8 +89,14 @@ with DAG(
             namespace='stefan-dev',
             image='python:3.9-slim',
             cmds=['python', '-c'],
-            arguments=['import time; time.sleep(10); print("Finished C")'],
+            arguments=['import time; time.sleep(10); print("Finished C!!")'],
             env_vars={'STAGE': 'C'},
+            container_resources=k8s.V1ResourceRequirements(
+                requests={
+                    "cpu": 10,
+                    "memory": "200Mi",
+                },
+            ),
             in_cluster=True,
         )
 
