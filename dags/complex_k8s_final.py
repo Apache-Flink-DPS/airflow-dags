@@ -25,7 +25,7 @@ with DAG(
     csv_volume = k8s.V1Volume(
         name="csv-volume",
         persistent_volume_claim=k8s.V1PersistentVolumeClaimVolumeSource(
-            claim_name="test-pvc"
+            claim_name="pv-volume1"
         )
     )
 
