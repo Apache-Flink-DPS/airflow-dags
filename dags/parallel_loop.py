@@ -39,4 +39,6 @@ print(f"Result: {res}")
         do_xcom_push=True,
     )
 
+    generate_numbers >> square
+
 k8s_chained_loop()
