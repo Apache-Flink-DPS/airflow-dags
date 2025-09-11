@@ -25,7 +25,7 @@ with DAG(
 ) as dag:
     @task.branch(task_id="branch_task")
     def branch_func(ti=None):
-        xcom_value = int(ti.xcom_pull(task_ids="start_task"))
+        xcom_value = int(ti.xcom_pull(task_ids="k8s_task_1"))
         if xcom_value >= 5:
             return ['continue_task', 'continue_task2']
         elif xcom_value >= 3:
@@ -77,4 +77,4 @@ print(f"K8s task 1 output: {output_data}")
     continue_op2 = EmptyOperator(task_id="continue_task2", dag=dag)
     stop_op = EmptyOperator(task_id="stop_task", dag=dag)
 
-    start_op >> branch_op >> [continue_op, continue_op2, stop_op]
+    start_op >> k8s_task_1 >> branch_op >> [continue_op, continue_op2, stop_op]
