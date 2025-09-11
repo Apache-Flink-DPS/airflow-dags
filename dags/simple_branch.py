@@ -35,7 +35,7 @@ with DAG(
 
     start_op = BashOperator(
         task_id="start_task",
-        bash_command="echo 5",
+        bash_command="echo 4",
         do_xcom_push=True,
         dag=dag,
     )
