@@ -18,7 +18,7 @@ def k8s_chained_loop():
     # 2. Define KubernetesPodOperator template
     square = KubernetesPodOperator.partial(
         task_id="square",
-        namespace="default",
+        namespace="stefan-dev",
         name="square-task",
         image="python:3.12",
         cmds=["python", "-c"],

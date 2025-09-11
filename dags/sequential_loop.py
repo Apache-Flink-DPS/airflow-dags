@@ -7,7 +7,7 @@ with DAG("k8s_sequential_loop", start_date=datetime(2025, 9, 1), schedule=None, 
     for i in range(1, 4):
         task = KubernetesPodOperator(
             task_id=f"square_{i}",
-            namespace="default",
+            namespace="stefan-dev",
             name=f"square-task-{i}",
             image="python:3.12",
             cmds=["python", "-c"],
