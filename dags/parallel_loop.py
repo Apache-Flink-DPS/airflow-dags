@@ -22,11 +22,21 @@ def k8s_chained_loop():
         name="square-task",
         image="python:3.12",
         cmds=["python", "-c"],
+        arguments=[
+            """
+import json, os, sys
+x = int(sys.argv[1])
+print(f"Squaring {x}")
+res = x * x
+
+os.makedirs('/airflow/xcom', exist_ok=True)
+with open('/airflow/xcom/return.json', 'w') as f:
+    json.dump(res, f)
+print(f"Result: {res}")
+"""
+        ],
         get_logs=True,
         do_xcom_push=True,
     )
-
-    # 3. Dynamically expand the K8s operator over the list from generate_numbers
-    square.expand(arguments=generate_numbers.output.map(lambda n: ["python", "-c", f"import json, os; x={n}; res=x*x; os.makedirs('/airflow/xcom', exist_ok=True); json.dump(res, open('/airflow/xcom/return.json','w')); print(res)"]))
 
 k8s_chained_loop()
