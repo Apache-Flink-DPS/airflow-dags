@@ -3,6 +3,7 @@ from airflow import DAG
 from airflow.decorators import task
 from airflow.operators.bash import BashOperator
 from airflow.operators.empty import EmptyOperator
+from airflow.providers.cncf.kubernetes.operators.pod import KubernetesPodOperator
 
 default_args = {
     'owner': 'stefanpedratscher',
@@ -32,6 +33,36 @@ with DAG(
         else:
             return None
 
+    k8s_task_1 = KubernetesPodOperator(
+        task_id='k8s_task_1',
+        name='k8s-pod-1',
+        namespace='stefan-dev',
+        image='python:3.9-slim',
+        cmds=['python', '-c'],
+        arguments=['''
+import json
+import os
+
+# XCom data injected via template
+input_data = {{ ti.xcom_pull(task_ids='start_task') | tojson }}
+print(f"K8s task 1 received: {input_data}")
+
+# Process the data
+output_data = int(input_data) + 1
+
+# Write output for XCom
+os.makedirs('/airflow/xcom', exist_ok=True)
+with open('/airflow/xcom/return.json', 'w') as f:
+    json.dump(output_data, f)
+
+print(f"K8s task 1 output: {output_data}")
+    '''],
+        do_xcom_push=True,
+        get_logs=True,
+        in_cluster=True,
+        is_delete_operator_pod=True,
+        dag=dag,
+    )
 
     start_op = BashOperator(
         task_id="start_task",
