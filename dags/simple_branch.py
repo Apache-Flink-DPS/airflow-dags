@@ -76,7 +76,7 @@ print(f"K8s task 1 output: {output_data}")
     continue_op = EmptyOperator(task_id="continue_task", dag=dag)
     continue_op2 = EmptyOperator(task_id="continue_task2", dag=dag)
     stop_op = EmptyOperator(task_id="stop_task", dag=dag)
-    stop_op2 = EmptyOperator(task_id="stop_task", dag=dag)
+    stop_op2 = EmptyOperator(task_id="stop_task2", dag=dag)
 
     stop_op >> stop_op2
     start_op >> k8s_task_1 >> branch_op >> [continue_op, continue_op2, stop_op]
