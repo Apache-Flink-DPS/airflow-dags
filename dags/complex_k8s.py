@@ -1,23 +1,28 @@
-from datetime import datetime, timedelta
-from airflow import DAG
-from airflow.providers.cncf.kubernetes.operators.pod import KubernetesPodOperator
+from __future__ import annotations
+
+import datetime
+
+import pendulum
+
+from airflow.models.dag import DAG
+from airflow.providers.cncf.kubernetes.operators.kubernetes_pod import KubernetesPodOperator
 from airflow.utils.task_group import TaskGroup
 
 default_args = {
     'owner': 'stefanpedratscher',
     'depends_on_past': False,
-    'start_date': datetime(2025, 8, 7),
     'email_on_failure': False,
     'email_on_retry': False,
     'retries': 1,
-    'retry_delay': timedelta(minutes=2),
+    'retry_delay': datetime.timedelta(minutes=2),
 }
 
 with DAG(
-        'complex_k8s_only',
+        dag_id='complex_k8s_only_v3',
         default_args=default_args,
-        description='Complex DAG with only KubernetesPodOperator',
+        description='Complex DAG with only KubernetesPodOperator for Airflow 3.0.4',
         schedule='@daily',
+        start_date=pendulum.datetime(2025, 8, 7, tz="UTC"),
         catchup=False,
         tags=['k8s', 'complex'],
 ) as dag:
@@ -57,10 +62,14 @@ with DAG(
             arguments=['print("Processing task A")'],
             env_vars={'STAGE': 'A'},
             resources={
-                'request_cpu': '250m',
-                'request_memory': '128Mi',
-                'limit_cpu': '500m',
-                'limit_memory': '256Mi',
+                'requests': {
+                    'cpu': '250m',
+                    'memory': '128Mi',
+                },
+                'limits': {
+                    'cpu': '500m',
+                    'memory': '256Mi',
+                },
             },
             in_cluster=True,
         )
