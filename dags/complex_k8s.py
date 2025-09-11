@@ -88,7 +88,7 @@ with DAG(
         env_vars={'STAGE': 'C'},
         container_resources=k8s.V1ResourceRequirements(
             requests={
-                "cpu": 8,
+                "cpu": 6,
                 "memory": "200Mi",
             },
         ),
