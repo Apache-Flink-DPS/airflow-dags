@@ -11,7 +11,7 @@ def k8s_chained_loop():
         return [1, 2, 3]
 
     generate_numbers = PythonOperator(
-        task_id="generate_numbers",
+        task_id="generate_numbers_k8s_parallel_loop",
         python_callable=generate_numbers_callable,
     )
 
