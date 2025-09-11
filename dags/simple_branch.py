@@ -26,7 +26,7 @@ with DAG(
     def branch_func(ti=None):
         xcom_value = int(ti.xcom_pull(task_ids="start_task"))
         if xcom_value >= 5:
-            return "continue_task"
+            return ['continue_task', 'continue_task2']
         elif xcom_value >= 3:
             return "stop_task"
         else:
@@ -43,6 +43,7 @@ with DAG(
     branch_op = branch_func()
 
     continue_op = EmptyOperator(task_id="continue_task", dag=dag)
+    continue_op2 = EmptyOperator(task_id="continue_task2", dag=dag)
     stop_op = EmptyOperator(task_id="stop_task", dag=dag)
 
     start_op >> branch_op >> [continue_op, stop_op]
