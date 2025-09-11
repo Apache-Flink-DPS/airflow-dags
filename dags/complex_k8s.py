@@ -1,28 +1,23 @@
-from __future__ import annotations
-
-import datetime
-
-import pendulum
-
-from airflow.models.dag import DAG
-from airflow.providers.cncf.kubernetes.operators.kubernetes_pod import KubernetesPodOperator
+from datetime import datetime, timedelta
+from airflow import DAG
+from airflow.providers.cncf.kubernetes.operators.pod import KubernetesPodOperator
 from airflow.utils.task_group import TaskGroup
 
 default_args = {
     'owner': 'stefanpedratscher',
     'depends_on_past': False,
+    'start_date': datetime(2025, 8, 7),
     'email_on_failure': False,
     'email_on_retry': False,
     'retries': 1,
-    'retry_delay': datetime.timedelta(minutes=2),
+    'retry_delay': timedelta(minutes=2),
 }
 
 with DAG(
-        dag_id='complex_k8s_only_v3',
+        'complex_k8s_only',
         default_args=default_args,
-        description='Complex DAG with only KubernetesPodOperator for Airflow 3.0.4',
+        description='Complex DAG with only KubernetesPodOperator',
         schedule='@daily',
-        start_date=pendulum.datetime(2025, 8, 7, tz="UTC"),
         catchup=False,
         tags=['k8s', 'complex'],
 ) as dag:
