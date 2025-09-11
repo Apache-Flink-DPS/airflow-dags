@@ -22,19 +22,6 @@ def k8s_chained_loop():
         name="square-task",
         image="python:3.12",
         cmds=["python", "-c"],
-        arguments=[
-            """
-import json, os, sys
-x = int(sys.argv[1])
-print(f"Squaring {x}")
-res = x * x
-
-os.makedirs('/airflow/xcom', exist_ok=True)
-with open('/airflow/xcom/return.json', 'w') as f:
-    json.dump(res, f)
-print(f"Result: {res}")
-"""
-        ],
         get_logs=True,
         do_xcom_push=True,
     )
