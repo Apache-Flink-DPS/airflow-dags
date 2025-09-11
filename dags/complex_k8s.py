@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.providers.cncf.kubernetes.operators.pod import KubernetesPodOperator
 from airflow.utils.task_group import TaskGroup
+from kubernetes.client import models as k8s
 
 default_args = {
     'owner': 'stefanpedratscher',
@@ -56,16 +57,12 @@ with DAG(
             cmds=['python', '-c'],
             arguments=['print("Processing task A")'],
             env_vars={'STAGE': 'A'},
-            resources={
-                'requests': {
-                    'cpu': '250m',
-                    'memory': '128Mi',
+            container_resources=k8s.V1ResourceRequirements(
+                requests={
+                    "cpu": 1,
+                    "memory": "200Mi",
                 },
-                'limits': {
-                    'cpu': '500m',
-                    'memory': '256Mi',
-                },
-            },
+            ),
             in_cluster=True,
         )
 
